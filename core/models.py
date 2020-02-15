@@ -16,7 +16,7 @@ class MenuPoint(models.Model):
     menu = models.ForeignKey('Menu', related_name='points', on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     url_name = models.CharField(max_length=255)
-    parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, related_name='children')
+    parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='children')
     depth = models.PositiveSmallIntegerField(default=0, editable=False)
 
     class Meta:

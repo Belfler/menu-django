@@ -1,0 +1,5 @@
+{% for point in points %}
+    <ul>
+        <li>{{ point.depth }}: <a href="{% url point.url_name %}">{{ point.title }}</a></li>
+    </ul>
+{% endfor %}

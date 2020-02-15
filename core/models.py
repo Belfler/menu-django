@@ -17,7 +17,7 @@ class MenuPoint(models.Model):
     title = models.CharField(max_length=255)
     url_name = models.CharField(max_length=255)
     parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, related_name='children')
-    depth = models.PositiveSmallIntegerField(default=0)
+    depth = models.PositiveSmallIntegerField(default=0, editable=False)
 
     class Meta:
         unique_together = ['menu', 'url_name']

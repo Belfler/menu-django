@@ -30,7 +30,8 @@ class MenuPoint(models.Model):
             raise NoReverseMatch(f"There is no url with name '{self.url_name}'")
         self.depth = self.parent.depth + 1 if self.parent else 0
         super(MenuPoint, self).save(*args, **kwargs)
-        self.create_relations()
+        if self.parent:
+            self.create_relations()
 
     def url_name_exists(self):
         try:

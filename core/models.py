@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 from django.shortcuts import resolve_url
 from django.urls.exceptions import NoReverseMatch
 
@@ -40,6 +40,7 @@ class MenuPoint(models.Model):
             return False
         return True
 
+    @transaction.atomic
     def create_relations(self):
         relations_of_parent = Relation.objects.filter(descendant=self.parent).values_list('ancestor_id', 'power')
         relations = []

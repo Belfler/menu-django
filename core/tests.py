@@ -1,3 +1,5 @@
+from itertools import product as cartesian_product
+
 from django.shortcuts import resolve_url
 from django.test import Client, TestCase
 
@@ -39,3 +41,20 @@ class TestMenu(TestCase):
         # Menu point 'about you' is active.
         with self.assertNumQueries(1):
             self.client.get(resolve_url(self.about_you.url_name))
+
+    def test_change_parent_of_menu_point(self):
+        n_relations_before_change = Relation.objects.all().count()
+
+        self.about_us.parent = self.newspapers
+        self.about_us.save()
+
+        n_relations_after_change = Relation.objects.all().count()
+        self.assertEqual(n_relations_after_change, 9)
+
+        for ancestor, descendant in cartesian_product([self.news, self.newspapers],
+                                                      [self.about_us, self.about_you, self.about_them]):
+            self.assertTrue(Relation.objects.filter(ancestor=ancestor, descendant=descendant).exists())
+
+        self.about_us.parent = self.about
+        self.about_us.save()
+        self.assertEqual(n_relations_before_change, Relation.objects.all().count())

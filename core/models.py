@@ -2,8 +2,6 @@ from django.db import models, transaction
 from django.shortcuts import resolve_url
 from django.urls.exceptions import NoReverseMatch
 
-from core.exceptions import NotSupported
-
 __all__ = ['Menu', 'MenuPoint', 'Relation']
 
 
@@ -41,7 +39,8 @@ class MenuPoint(models.Model):
 
         old_instance_parent = MenuPoint.objects.get(pk=self.pk).parent
         if getattr(old_instance_parent, 'pk', None) != getattr(self.parent, 'pk', None):  # Parent is changed.
-            raise NotSupported('Changing parent of MenuPoint is not supported.')
+            super(MenuPoint, self).save(*args, **kwargs)
+            self.normalize_relations()
 
         super(MenuPoint, self).save(*args, **kwargs)
 
@@ -60,6 +59,19 @@ class MenuPoint(models.Model):
             relations.append(Relation(ancestor_id=ancestor_id, descendant=self, power=power + 1))
         relations.append(Relation(ancestor=self.parent, descendant=self, power=1))
         Relation.objects.bulk_create(relations)
+
+    def normalize_relations(self):
+        """Dumb solution to update relations: Recreate relations of object and its descendants with ancestors."""
+        descendants = MenuPoint.objects.filter(relations_with_ancestors__ancestor=self).order_by('depth')\
+            .values_list('pk', flat=True)
+        relations_with_ancestors = Relation.objects.filter(descendant=self)
+        relations_of_descendants_with_their_ancestors = \
+            Relation.objects.filter(descendant__in=descendants)
+        relations_with_ancestors.union(relations_of_descendants_with_their_ancestors).delete()
+
+        self.create_relations()
+        for descendant_pk in descendants:
+            MenuPoint.objects.get(pk=descendant_pk).create_relations()
 
 
 class Relation(models.Model):

@@ -2,6 +2,8 @@ from django.db import models, transaction
 from django.shortcuts import resolve_url
 from django.urls.exceptions import NoReverseMatch
 
+from core.exceptions import NotSupported
+
 __all__ = ['Menu', 'MenuPoint', 'Relation']
 
 
@@ -28,10 +30,20 @@ class MenuPoint(models.Model):
     def save(self, *args, **kwargs):
         if not self.url_name_exists():
             raise NoReverseMatch(f"There is no url with name '{self.url_name}'")
+
         self.depth = self.parent.depth + 1 if self.parent else 0
+
+        if not self.pk:  # Creating new object.
+            super(MenuPoint, self).save(*args, **kwargs)
+            if self.parent:
+                self.create_relations()
+            return
+
+        old_instance_parent = MenuPoint.objects.get(pk=self.pk).parent
+        if getattr(old_instance_parent, 'pk', None) != getattr(self.parent, 'pk', None):  # Parent is changed.
+            raise NotSupported('Changing parent of MenuPoint is not supported.')
+
         super(MenuPoint, self).save(*args, **kwargs)
-        if self.parent:
-            self.create_relations()
 
     def url_name_exists(self):
         try:
